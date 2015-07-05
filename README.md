@@ -1,6 +1,15 @@
 # DigitalItalicOpticalCharacterRecognition
 An Optical Character Recognition tool for italic (and non-italic) fonts.
 
+This tool was specifically built to handle italic/overlapping digital characters
+
+
+This tool should work for you if:
+- Characters are consistant to the pixel
+- Characters appear on a perfect horizontal line
+- The text color of individual lines of characters is consistent
+- The expected possible colors of the text do not appear often in the background colors
+
 # Usage
 ```java
 // Create the reader

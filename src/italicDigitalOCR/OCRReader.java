@@ -60,7 +60,7 @@ public class OCRReader {
 	 */
 	public static void main(String[] args) {
 		try {
-			OCRReader reader = new OCRReader("OcrTraining");
+			OCRReader reader = new OCRReader("MessageFont");
 			reader.printCharMap();
 			BufferedImage image = ImageIO.read(new File("ExampleImage.png"));
 			String readin = reader.readLines(image);
@@ -240,8 +240,10 @@ public class OCRReader {
 			}
 		} catch (Exception e) {
 			// Reached End of Lines hopefully.
-			System.out.println(e);
-			e.printStackTrace();
+			if (DEBUG) {
+				System.out.println(e);
+				e.printStackTrace();
+			}
 		}
 		return result.trim();
 	}
@@ -258,7 +260,7 @@ public class OCRReader {
 		
 		// If an exception is thrown from here that means there is no line to find (hopefully :D)
 		this.textColor = this.getFirstColor(topLineSearchStart);
-		this.topLine = this.getNextTopLine(this.textColor, topLineSearchStart);
+		this.topLine = this.getNextTopLine(this.textColor);
 
 		String result = "";
 		boolean expectedChar = false;
@@ -276,10 +278,15 @@ public class OCRReader {
 		return result;
 	}
 
-	private int getNextTopLine(int textColor, int yStart) throws Exception {
-		for (int y = yStart; y <= this.height - this.expectedHeight; y++) {
-			for (int x = 0; x < this.width; x++) {
-
+	private int getNextTopLine(int textColor) throws Exception {
+		int yStart = this.topLine;
+	
+		for (int x = 0; x < this.width; x++) {
+			for (int y = yStart; y <= yStart + this.expectedHeight && y < this.height; y++) {
+	
+				if (x == 7 && y == 8) {
+					System.out.println("LEFTTOPS");
+				}
 				// Found a character pixel, try to match it
 				if (image.getRGB(x, y) == textColor) {
 
@@ -292,9 +299,12 @@ public class OCRReader {
 							
 							for (int c = 0; c < charList.size(); c++) {
 								chara = charList.get(c);
-								
-								this.topLine = y - chara.yTopLeftPixel;
-								if (this.testMatch(chara, x - chara.xTopLeftPixel)) {
+								if (chara.charName == 'W') {
+									System.out.println("DKDS");
+								}
+									
+								this.topLine = y - chara.yLeftTopPixel;
+								if (this.testMatch(chara, x - chara.xLeftTopPixel)) {
 									return this.topLine;
 								}
 							}
@@ -302,6 +312,11 @@ public class OCRReader {
 					}
 				}
 			}
+		}
+		
+		if (yStart + this.expectedHeight <= this.height) {
+			this.topLine = yStart + this.expectedHeight;
+			return this.getNextTopLine(textColor);
 		}
 
 		throw new Exception("Could not find the top line.");
@@ -311,7 +326,11 @@ public class OCRReader {
 
 		for (int y = startY; y < this.height; y++) {
 			for (int x = 0; x < this.width; x++) {
+				if (x == 7 && y == 8) {
+					System.out.println("s begin");
+				}
 				if (matchesTextColors(image.getRGB(x, y))) {
+					this.topLine = y;
 					return image.getRGB(x, y);
 				}
 			}

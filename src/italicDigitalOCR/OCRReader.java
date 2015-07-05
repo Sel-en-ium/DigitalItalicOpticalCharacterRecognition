@@ -414,6 +414,7 @@ public class OCRReader {
 	 * @return
 	 */
 	private boolean testMatch(OCRChar chara, int xStart) {
+		xStart -= chara.nonInterferingZoneLeft; // To handle chars with left-side interference zones
 		
 		if (xStart < 0 || chara.imageWidth + xStart > this.width || this.topLine < 0 || chara.imageHeight + this.topLine > this.height) {
 			return false; // icon doesn't fit

@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 import javax.imageio.ImageIO;
 
@@ -17,17 +18,6 @@ public class OCRChar
 	private static int RED = -1237980; // Interfering character pixel
 	private static int GREY = -3947581; // Interfering whitespace
 	
-	
-	private static String[] specialNames = {
-           "BackwardSlash",
-           "ForwardSlash"
-	};
-	
-	private static char[] specialChars = {
-           '\\',
-           '/'
-	};
-	
 	/* Class Properties */
 	
 	BufferedImage image;
@@ -36,6 +26,8 @@ public class OCRChar
 	int imageHeight;
 	int xLeftTopPixel;
 	int yLeftTopPixel;
+	int xTopLeftPixel;
+	int yTopLeftPixel;
 	int nonInterferingZoneLeft; // Inclusive
 	int nonInterferingZoneRight; // Exclusive (aka, pixel where interfering starts [or the width])
 	int numCharacterPixels;
@@ -49,6 +41,8 @@ public class OCRChar
 		this.imageHeight = image.getHeight();
 		this.xLeftTopPixel = 0;
 		this.yLeftTopPixel = 0;
+		this.xTopLeftPixel = 0;
+		this.yTopLeftPixel = 0;
 		this.nonInterferingZoneLeft = 0;
 		this.nonInterferingZoneRight = this.imageWidth;
 		this.numCharacterPixels = 0;
@@ -56,43 +50,49 @@ public class OCRChar
 		this.whiteSpaceLeft = this.imageWidth;
 	}
 	
-	public OCRChar(String baseFolder, String fileName) throws Exception {
-		this.image = ImageIO.read(new File(baseFolder + "/" + fileName));
-		this.charName = fileName.charAt(0);
-		this.imageWidth = image.getWidth();
-		this.imageHeight = image.getHeight();
-		this.setNonInterferingZone();
-		this.setLeftTopPixel();
-		this.setNumCharacterPixels();
-		this.setCharHeight();
-		this.setWhiteSpaceLeft();
-	}
-	
-	public OCRChar(String baseFolder, String folder, String fileName) throws Exception {
-		this.image = ImageIO.read(new File(baseFolder + "/" + folder + "/" + fileName));
+	public OCRChar(String file) throws Exception {
+		this.image = ImageIO.read(new File(file));
 		
-		if (folder.equals("Specials")) {
-			this.charName = translateSpecialName(fileName);
-		}
+		this.charName = getCharName(file, null);
 		
 		this.imageWidth = image.getWidth();
 		this.imageHeight = image.getHeight();
 		this.setNonInterferingZone();
 		this.setLeftTopPixel();
+		this.setTopLeftPixel();
 		this.setNumCharacterPixels();
 		this.setCharHeight();
 		this.setWhiteSpaceLeft();
 	}
 	
-	public char translateSpecialName(String fileName) throws IOException {
-		String name = fileName.substring(0, fileName.indexOf('.'));
+	public OCRChar(String file, HashMap<String, Character> nameConfig) throws Exception {
+		this.image = ImageIO.read(new File(file));
 		
-		for (int i = 0; i < specialNames.length; i++) {
-			if (name.equals(specialNames[i])) {
-				return specialChars[i];
+		this.charName = getCharName(file, nameConfig);
+		
+		this.imageWidth = image.getWidth();
+		this.imageHeight = image.getHeight();
+		this.setNonInterferingZone();
+		this.setLeftTopPixel();
+		this.setTopLeftPixel();
+		this.setNumCharacterPixels();
+		this.setCharHeight();
+		this.setWhiteSpaceLeft();
+	}
+	
+	public char getCharName(String file, HashMap<String, Character> nameConfig) throws Exception {
+		String name = file.substring(0, file.indexOf('.'));
+		name = name.substring(name.lastIndexOf(File.separator)+1);
+		
+		if (nameConfig != null) {
+			return nameConfig.get(name);
+		} else {
+			if (name.length() > 1) {
+				throw new Exception("Failed to get charName.");
+			} else {
+				return name.charAt(0);
 			}
 		}
-		throw new IOException("No special name found for fileName: " + fileName);
 	}
 	
 	private void setNonInterferingZone() {
@@ -117,6 +117,19 @@ public class OCRChar
 				if (isCharacterPixel(x, y)) {
 					this.xLeftTopPixel = x;
 					this.yLeftTopPixel = y;
+					return;
+				}
+			}
+		}
+		throw new Exception("Could not find the left top pixel for " + this.charName);
+	}
+	
+	private void setTopLeftPixel() throws Exception {		
+		for (int y = 0; y < imageHeight; y++) {
+			for (int x = this.nonInterferingZoneLeft; x < imageWidth; x++) {
+				if (isCharacterPixel(x, y)) {
+					this.xTopLeftPixel = x;
+					this.yTopLeftPixel = y;
 					return;
 				}
 			}
@@ -177,6 +190,9 @@ public class OCRChar
 	}
 	
 	public boolean isCharacterPixel(int x, int y) {
+		if (!this.inBounds(x, y)) {
+			return false;
+		}
 		int pixelColor = this.image.getRGB(x, y);
 		if (pixelColor == BLACK || pixelColor == RED) {
 			return true;
@@ -185,6 +201,9 @@ public class OCRChar
 	}
 	
 	public boolean isInterferingPixel(int x, int y) {
+		if (!this.inBounds(x, y)) {
+			return false;
+		}
 		int pixelColor = this.image.getRGB(x, y);
 		if (pixelColor == RED || pixelColor == GREY) {
 			return true;
@@ -192,4 +211,13 @@ public class OCRChar
 		return false;
 	}
 	
+	private boolean inBounds(int x, int y) {
+		if (x < 0 || x >= this.imageWidth) {
+			return false;
+		}
+		if (y < 0 || y >= this.imageHeight) {
+			return false;
+		}
+		return true;
+	}
 }

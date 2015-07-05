@@ -1,20 +1,23 @@
 package italicDigitalOCR;
 
-import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+
+import com.sun.prism.paint.Color;
 
 public class OCRReader {
 	
@@ -22,9 +25,12 @@ public class OCRReader {
 	private static boolean DEBUG = false;
 	private static boolean TRAINING = true;
 	private static String ERROR_LOG = "OcrErrorLog.txt";
-	private static String trainingFolder = "OcrTraining";
-	private static String characterFolder = "Characters";
-	private static String errorFolder = "Errors";
+	private static String TRAINING_FOLDER = "OcrTraining";
+	private static String CHAR_NAME_LIST = "nameConfig.txt";
+	private static String ERROR_FOLDER = "Errors";
+	
+	/* Other Constants, shouldn't modify */
+	private static int BLACK = -16777216;
 	
 	public static void main(String[] args) {
 		try {
@@ -32,42 +38,22 @@ public class OCRReader {
 			reader.printCharMap();
 			BufferedImage image = ImageIO.read(new File("screenshot.png"));
 			String readin = reader.readLines(image);
-			System.out.println("SUCCESS LOL!  Well here it is.. '" + readin + "'");
+			System.out.println("SUCCESS LOL!  Well here it is.. " + System.lineSeparator() + "'" + readin + "'");
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	
-
-	private static int nonTextColor = -16777215; // Just off black, RGB = 0,0,1
-	private static int[] textColors = { -1, // White
-			-10582070, // Met Blue
-			-1571587, // Elite/Item bottom line Pink
-			-16711936, // Equipment Bonus Green
-			-65536, // Lock Text Red
-			-3866137, // Equipment Bonus purple
-			-1317505, // Super Gold/Yellow
-			-494583, // Tortoise Gem Bonus Orange
-			-7549187, // Magic Def% Bonus Blue
-			-8521341, // Sockected Gem Green
-			-256, // Npc Yellow
-			-32704 // Gourd kills Orange
-	};
-
-	// Leftmost cols first
-	private static int[][] generalInterferenceZoneLeft = { { 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 },
-			{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } };
-
-	// Rightmost cols first
-	private static int[][] generalInterferenceZoneRight = { { 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0 } };
-
-	/* Config Chars and stuff */
+	/* Config Chars and other stuff from training folder*/
 	private OCRChar space;
 	
 	private int expectedHeight;
 	private int whiteSpaceLeft;
+	
+	private LinkedList<Integer> textColors;
+	private LinkedList<boolean[]> generalInterferencePixelsLeft;
+	private LinkedList<boolean[]> generalInterferencePixelsRight;
 	
 	
 	// 1st index = whiteSpaceLeft, 2nd index = yLeftTopCharPixel, 3rd = ordered by numPixels(largest), height(largest) (maybe add width)
@@ -79,7 +65,6 @@ public class OCRReader {
 	private int topLine;
 	private int textColor;
 	private int x = 0;
-	private int y = 0;
 	private OCRChar prevChar;
 
 	public OCRReader() throws Exception {
@@ -96,11 +81,50 @@ public class OCRReader {
 		this.expectedHeight = this.getTrainingImage("Height.png").getHeight();
 		this.whiteSpaceLeft = this.getTrainingImage("WhiteSpaceLeft.png").getWidth() + 1;
 		
+		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
+		
+		this.generalInterferencePixelsLeft = this.getInterferenceArray("GeneralInterferencePixelsLeft.png");
+		this.generalInterferencePixelsRight = this.getInterferenceArray("GeneralInterferencePixelsRight.png");
+		
 		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
 	}
 	
 	private BufferedImage getTrainingImage(String fileName) throws IOException {
-		return ImageIO.read(new File(this.trainingFolder + "/" + fileName));
+		return ImageIO.read(new File(TRAINING_FOLDER + File.separator + fileName));
+	}
+	
+	private LinkedList<Integer> getPossibleTextColors(String fileName) throws IOException {
+		LinkedList<Integer> colors = new LinkedList<Integer>();
+		BufferedImage img = this.getTrainingImage(fileName);
+		for (int x = 0; x < img.getWidth(); x++) {
+			for (int y = 0; y < img.getHeight(); y++) {
+				colors.add(img.getRGB(x, y));
+			}
+		}
+		return colors;
+	}
+	
+	private LinkedList<boolean[]> getInterferenceArray(String fileName) throws Exception {
+		LinkedList<boolean[]> arr = new LinkedList<boolean[]>();
+		BufferedImage img = this.getTrainingImage(fileName);
+		boolean[] temp;
+		
+		if (img.getHeight() != this.expectedHeight) {
+			throw new Exception("Unexpected for file, " + fileName + ", should be " + this.expectedHeight + "px.");
+		}
+		
+		for (int x = 0; x < img.getWidth(); x++) {
+			temp = new boolean[this.expectedHeight];
+			for (int y = 0; y < this.expectedHeight; y++) {
+				if (img.getRGB(x, y) == BLACK) {
+					temp[y] = true;
+				} else {
+					temp[y] = false;
+				}
+			}
+			arr.add(temp);
+		}
+		return arr;
 	}
 	
 	private void populateCharMap(List<OCRChar> allChars) {
@@ -138,34 +162,59 @@ public class OCRReader {
 	}
 	
 	private void getAllChars(List<OCRChar> list) throws IOException {
+		HashMap<String, Character> nameConfig = null;
+		
 		// Iterates through all files in the directory
-		DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(this.trainingFolder + "/" + this.characterFolder));
-		for (Path currentFile : stream) {
+		DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(TRAINING_FOLDER));
+		for (Path currentEntity : stream) {
 
-			if (Files.isDirectory(currentFile)) {
-				String folder = currentFile.getFileName().toString();
-				DirectoryStream<Path> subStream = Files.newDirectoryStream(currentFile);
+			// We will only be looking at files inside of directories
+			if (Files.isDirectory(currentEntity)) {
+				try {
+					nameConfig = getNameConfig(currentEntity.toString());
+				} catch (Exception e) {
+					// No name config
+					nameConfig = null;
+				}
+				
+				DirectoryStream<Path> subStream = Files.newDirectoryStream(currentEntity);
 				
 				for (Path subFile : subStream) {
-					addCharToList(list, folder, subFile.getFileName().toString());
+					String fileName = subFile.toString();
+					if (fileName.toLowerCase().contains(".png")) {
+						addCharToList(list, fileName, nameConfig);
+					}
 				}
-			} else {
-				addCharToList(list, "", currentFile.getFileName().toString());
 			}
 		}
 	}
+	
+	private HashMap<String, Character> getNameConfig(String folder) throws Exception {
+		HashMap<String, Character> config = new HashMap<String, Character>();
+		File file = new File(folder + "/" + CHAR_NAME_LIST);
+		if (file.exists()) {
+			// load the config file in
+			String[] entry;
+			BufferedReader br = new BufferedReader(new FileReader(file));
+		 
+			String line = null;
+			while ((line = br.readLine()) != null) {
+				entry = line.split(",");
+				config.put(entry[0], entry[1].charAt(0));
+			}
+			br.close();
 
-	private void addCharToList(List<OCRChar> list, String folder, String fileName) {
+			return config;
+		}
+		throw new Exception("No config File");
+	}
+
+	private void addCharToList(List<OCRChar> list, String fileName, HashMap<String, Character> nameConfig) {
 		try {
 			OCRChar c;
-			if (folder.equals("")) {
-				c = new OCRChar(this.trainingFolder + "/" + this.characterFolder, fileName);
-			} else {
-				c = new OCRChar(this.trainingFolder + "/" + this.characterFolder, folder, fileName);
-			}
-			
+			c = new OCRChar(fileName, nameConfig);
 			if (c.imageHeight != this.expectedHeight) {
-				throw new Exception("Character " + folder + "/" + fileName + " is unexpected height.");
+				throw new Exception("Character " + fileName + " is unexpected height.");
 			}
 			list.add(c);
 		} catch (Exception e) {
@@ -177,19 +226,28 @@ public class OCRReader {
 		this.image = image;
 		this.height = image.getHeight();
 		this.width = image.getWidth();
-		try {
-			return this.readLine(0);
-		} catch (Exception e) {
-			return "";
-		}
 		
+		String result = "";
+		try {
+			this.topLine = 0;
+			while (this.topLine <= this.height - this.expectedHeight) {
+				result += this.readLine(this.topLine) + System.lineSeparator();
+				this.topLine += this.expectedHeight;
+			}
+		} catch (Exception e) {
+			// Reached End of Lines hopefully.
+			System.out.println(e);
+			e.printStackTrace();
+		}
+		return result.trim();
 	}
 
 	public String readLine(BufferedImage image) throws Exception {
 		this.image = image;
 		this.height = image.getHeight();
 		this.width = image.getWidth();
-		return this.readLine(0);
+		this.topLine = 0;
+		return this.readLine(this.topLine);
 	}
 
 	private String readLine(int topLineSearchStart) throws Exception {
@@ -215,9 +273,7 @@ public class OCRReader {
 	}
 
 	private int getNextTopLine(int textColor, int yStart) throws Exception {
-		int topLineTemp = this.topLine;
-
-		for (int y = yStart; y < this.height - this.expectedHeight; y++) {
+		for (int y = yStart; y <= this.height - this.expectedHeight; y++) {
 			for (int x = 0; x < this.width; x++) {
 
 				// Found a character pixel, try to match it
@@ -227,14 +283,14 @@ public class OCRReader {
 					LinkedList<OCRChar> charList;
 					OCRChar chara;
 					for (int heightLv = 0; heightLv < this.expectedHeight; heightLv++) {
-						for (int whiteSpaceLv = 0; whiteSpaceLv < this.whiteSpaceLeft; whiteSpaceLv++) {
+						for (int whiteSpaceLv = 0; whiteSpaceLv < this.charMap.size(); whiteSpaceLv++) {
 							charList = this.charMap.get(whiteSpaceLv).get(heightLv);
 							
 							for (int c = 0; c < charList.size(); c++) {
 								chara = charList.get(c);
 								
-								this.topLine = topLineTemp + y - chara.yLeftTopPixel;
-								if (this.testMatch(chara, x - chara.xLeftTopPixel)) {
+								this.topLine = y - chara.yTopLeftPixel;
+								if (this.testMatch(chara, x - chara.xTopLeftPixel)) {
 									return this.topLine;
 								}
 							}
@@ -273,8 +329,7 @@ public class OCRReader {
 			try {
 				return this.findExpectedMatch(xStart);
 			} catch (Exception e) {
-				// We may have encountered an unknown character, the result may be off
-				this.logImage("May have encountered unknown character at x=" + xStart + " y=" + this.topLine, "unknownkCharacter", TRAINING);
+				// We either hit the end of line or may have encountered an unknown character, the result may be off
 				return this.findUnexpectedMatch(xStart);
 			}
 		} else {
@@ -299,9 +354,10 @@ public class OCRReader {
 							return c;
 						}
 					}
-					if (this.prevChar.isCharacterPixel(x - xStart, y - this.topLine) && this.prevChar.isInterferingPixel(x - xStart, y - this.topLine)) {
+					// We may have found an unidentified character If the found character pixel is not a character interference pixel from the previous char
+					if (!this.prevChar.isCharacterPixel(x - xStart + this.prevChar.nonInterferingZoneRight, y - this.topLine) && this.prevChar.isInterferingPixel(x - xStart  + this.prevChar.nonInterferingZoneRight, y - this.topLine)) {
 						String msg = "Failed to find match for non-interference pixel on expected match at x=" + xStart + " y=" + this.topLine + ".  ";
-						this.logImage(msg, "unmatchedExpectedChar", false);
+						this.logImage(msg, "unmatchedExpectedChar", TRAINING);
 						throw new Exception(msg);
 					}
 				}				
@@ -312,9 +368,7 @@ public class OCRReader {
 			this.x = xStart + this.space.nonInterferingZoneRight;
 			return this.space;
 		}
-		String msg = "Failed to find match for non-interference pixel on expected match at x=" + xStart + " y=" + this.topLine + ".  ";
-		this.logImage(msg, "unmatchedExpectedChar", false);
-		throw new Exception(msg);
+		throw new Exception("EndOfLine");
 	}
 
 	
@@ -356,7 +410,7 @@ public class OCRReader {
 	 */
 	private boolean testMatch(OCRChar chara, int xStart) {
 		
-		if (chara.imageWidth + xStart > this.width || chara.imageHeight + this.topLine > this.height) {
+		if (xStart < 0 || chara.imageWidth + xStart > this.width || this.topLine < 0 || chara.imageHeight + this.topLine > this.height) {
 			return false; // icon doesn't fit
 		}
 
@@ -365,50 +419,19 @@ public class OCRReader {
 
 				// Character pixels should have text color in image
 				if (chara.isCharacterPixel(x, y)) {
-					if (image.getRGB(xStart + x, this.topLine + y) != textColor) {
+					if (this.image.getRGB(xStart + x, this.topLine + y) != textColor) {
 						return false;
 					}
 					// And non-interfering, non-character pixels should not have
 					// text color in image
 				} else if (!isInterferencePixel(chara, x, y)) {
-					if (image.getRGB(xStart + x, this.topLine + y) == textColor) {
+					if (this.image.getRGB(xStart + x, this.topLine + y) == textColor) {
 						return false;
 					}
 				}
 			}
 		}
 		return true;
-	}
-
-	/**
-	 * Sets all matched character pixels to an off black color that hopefully is
-	 * not a textColor.
-	 * 
-	 * @param charIcon
-	 * @param image
-	 * @param xStart
-	 * @param yStart
-	 * @param offset
-	 */
-	private void eraseCharAt(OCRChar chara, int xStart, int yStart, int offset) {
-		int xImg = xStart - chara.xLeftTopPixel;
-		int yImg = yStart - chara.yLeftTopPixel;
-
-		for (int x = chara.nonInterferingZoneLeft; x < chara.nonInterferingZoneRight; x++) {
-			for (int y = 0; y < chara.imageHeight; y++) {
-				if (chara.isCharacterPixel(x, y) && !isRightInterferencePixel(chara, x, y)) {
-					image.setRGB(xImg + x, yImg + y, nonTextColor);
-				}
-			}
-		}
-		try {
-			if (DEBUG) {
-				ImageIO.write(image, "png", new File("Errors/erasred" + chara.charName + ".png"));
-			}
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private boolean isInterferencePixel(OCRChar chara, int x, int y) {
@@ -427,19 +450,11 @@ public class OCRReader {
 
 		// In general interference zone
 		int colsFromLeftOfInterferenceZone = x - chara.nonInterferingZoneLeft;
-		if (colsFromLeftOfInterferenceZone < generalInterferenceZoneLeft.length
-				&& generalInterferenceZoneLeft[colsFromLeftOfInterferenceZone][y] == 1) {
+		if (colsFromLeftOfInterferenceZone < this.generalInterferencePixelsLeft.size()
+				&& this.generalInterferencePixelsLeft.get(colsFromLeftOfInterferenceZone)[y]) {
 			return true;
 		}
 
-		return false;
-	}
-	
-	private boolean isLeftGeneralInterferencePixel(int x, int y) {
-		// In general interference zone
-		if (generalInterferenceZoneLeft[x][y] == 1) {
-			return true;
-		}
 		return false;
 	}
 
@@ -451,8 +466,8 @@ public class OCRReader {
 
 		// In general interference zone
 		int colsFromRightOfInterferenceZone = chara.nonInterferingZoneRight - x - 1;
-		if (colsFromRightOfInterferenceZone < generalInterferenceZoneRight.length
-				&& generalInterferenceZoneRight[colsFromRightOfInterferenceZone][y] == 1) {
+		if (colsFromRightOfInterferenceZone < this.generalInterferencePixelsRight.size()
+				&& this.generalInterferencePixelsRight.get(colsFromRightOfInterferenceZone)[y]) {
 			return true;
 		}
 
@@ -460,8 +475,8 @@ public class OCRReader {
 	}
 
 	private boolean matchesTextColors(int color) {
-		for (int i = 0; i < textColors.length; i++) {
-			if (color == textColors[i]) {
+		for (int i = 0; i < this.textColors.size(); i++) {
+			if (color == this.textColors.get(i)) {
 				return true;
 			}
 		}
@@ -472,7 +487,7 @@ public class OCRReader {
 		String additionalInfo = "";
 		if (DEBUG || override) {
 			try {
-				String filename = this.errorFolder + "/" + fileNamePrepend + new Date().getTime() + ".png";
+				String filename = ERROR_FOLDER + File.separator + fileNamePrepend + new Date().getTime() + ".png";
 				ImageIO.write(image, "png", new File(filename));
 				additionalInfo = "File saved to " + filename;
 			} catch (Exception e) {

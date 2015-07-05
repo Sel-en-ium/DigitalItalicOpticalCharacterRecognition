@@ -78,7 +78,6 @@ public class OCRReader {
 
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
 		this.getAllChars(allChars);
-		
 		this.populateCharMap(allChars);		
 	}
 	

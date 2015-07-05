@@ -10,6 +10,9 @@ This tool should work for you if:
 - The text color of individual lines of characters is consistent
 - The expected possible colors of the text do not appear often in the background colors
 
+Here is [example](https://github.com/Sel-en-ium/DigitalItalicOpticalCharacterRecognition/blob/master/ExampleImage.png) image that the tool can successfully handle. 
+
+
 # Usage
 ```java
 // Create the reader

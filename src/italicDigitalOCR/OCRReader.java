@@ -17,35 +17,22 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
-import com.sun.prism.paint.Color;
-
 public class OCRReader {
 	
-	/* Config Constants */
+	/* Configurations Constants */
 	private static boolean DEBUG = false;
 	private static boolean TRAINING = true;
 	private static String ERROR_LOG = "OcrErrorLog.txt";
-	private static String TRAINING_FOLDER = "OcrTraining";
 	private static String CHAR_NAME_LIST = "nameConfig.txt";
 	private static String ERROR_FOLDER = "Errors";
 	
 	/* Other Constants, shouldn't modify */
 	private static int BLACK = -16777216;
-	
-	public static void main(String[] args) {
-		try {
-			OCRReader reader = new OCRReader();
-			reader.printCharMap();
-			BufferedImage image = ImageIO.read(new File("screenshot.png"));
-			String readin = reader.readLines(image);
-			System.out.println("SUCCESS LOL!  Well here it is.. " + System.lineSeparator() + "'" + readin + "'");
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
 
-	/* Config Chars and other stuff from training folder*/
+	/* Initialization variables */
+	private String TRAINING_FOLDER;
+	
+	/* Configuration Chars and other stuff from training folder*/
 	private OCRChar space;
 	
 	private int expectedHeight;
@@ -55,6 +42,7 @@ public class OCRReader {
 	private LinkedList<boolean[]> generalInterferencePixelsLeft;
 	private LinkedList<boolean[]> generalInterferencePixelsRight;
 	
+	/* Object variables for current progress*/
 	
 	// 1st index = whiteSpaceLeft, 2nd index = yLeftTopCharPixel, 3rd = ordered by numPixels(largest), height(largest) (maybe add width)
 	private LinkedList<LinkedList<LinkedList<OCRChar>>> charMap;   
@@ -67,9 +55,26 @@ public class OCRReader {
 	private int x = 0;
 	private OCRChar prevChar;
 
-	public OCRReader() throws Exception {
+	/*
+	 * For testing
+	 */
+	public static void main(String[] args) {
+		try {
+			OCRReader reader = new OCRReader("OcrTraining");
+			reader.printCharMap();
+			BufferedImage image = ImageIO.read(new File("screenshot.png"));
+			String readin = reader.readLines(image);
+			System.out.println("SUCCESS LOL!  Well here it is.. " + System.lineSeparator() + "'" + readin + "'");
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public OCRReader(String trainingFolder) throws Exception {
 
-		 this.loadConfiguration();
+		this.TRAINING_FOLDER = trainingFolder;
+		this.loadConfiguration();
 
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
 		this.getAllChars(allChars);
@@ -90,7 +95,7 @@ public class OCRReader {
 	}
 	
 	private BufferedImage getTrainingImage(String fileName) throws IOException {
-		return ImageIO.read(new File(TRAINING_FOLDER + File.separator + fileName));
+		return ImageIO.read(new File(this.TRAINING_FOLDER + File.separator + fileName));
 	}
 	
 	private LinkedList<Integer> getPossibleTextColors(String fileName) throws IOException {
@@ -165,7 +170,7 @@ public class OCRReader {
 		HashMap<String, Character> nameConfig = null;
 		
 		// Iterates through all files in the directory
-		DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(TRAINING_FOLDER));
+		DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(this.TRAINING_FOLDER));
 		for (Path currentEntity : stream) {
 
 			// We will only be looking at files inside of directories

@@ -23,7 +23,7 @@ public class OCRReader {
 	private static boolean DEBUG = false;
 	private static boolean TRAINING = true;
 	private static String ERROR_LOG = "OcrErrorLog.txt";
-	private static String CHAR_NAME_LIST = "nameConfig.txt";
+	private static String CHAR_NAME_LIST = "NameConfig.txt";
 	private static String ERROR_FOLDER = "Errors";
 	
 	/* Other Constants, shouldn't modify */
@@ -62,7 +62,7 @@ public class OCRReader {
 		try {
 			OCRReader reader = new OCRReader("OcrTraining");
 			reader.printCharMap();
-			BufferedImage image = ImageIO.read(new File("screenshot.png"));
+			BufferedImage image = ImageIO.read(new File("ExampleImage.png"));
 			String readin = reader.readLines(image);
 			System.out.println("SUCCESS LOL!  Well here it is.. " + System.lineSeparator() + "'" + readin + "'");
 		} catch (Exception e) {

@@ -80,6 +80,7 @@ public class OCRReader {
 	private int textColor;
 	private int x = 0;
 	private int y = 0;
+	private OCRChar prevChar;
 
 	public OCRReader() throws Exception {
 
@@ -202,7 +203,8 @@ public class OCRReader {
 		this.x = 0;
 		while (this.x < this.width) {
 			try {
-				result += getChar(this.x, expectedChar);
+				this.prevChar = getOCRChar(this.x, expectedChar);
+				result += this.prevChar.charName;
 				expectedChar = true;
 			} catch (Exception e) {
 				// Should mean we've finished reading the line.
@@ -259,26 +261,13 @@ public class OCRReader {
 	}
 
 	/**
-	 * Returns the character match of a suspected pixel at a certain offset.
-	 * 
-	 * @param xStart
-	 * @return
-	 * @throws Exception
-	 */
-	private char getChar(int xStart, boolean expectedChar) throws Exception {
-		OCRChar match = findMatch(xStart, expectedChar);
-
-		return match.charName;
-	}
-
-	/**
 	 * Delegates to expected or unexpected match.
 	 * 
 	 * @param xStart
 	 * @return
 	 * @throws Exception
 	 */
-	private OCRChar findMatch(int xStart, boolean expectedChar) throws Exception {
+	private OCRChar getOCRChar(int xStart, boolean expectedChar) throws Exception {
 		
 		if (expectedChar) {
 			try {
@@ -310,7 +299,7 @@ public class OCRReader {
 							return c;
 						}
 					}
-					if (!this.isLeftGeneralInterferencePixel(x - xStart, y - this.topLine)) {
+					if (this.prevChar.isCharacterPixel(x - xStart, y - this.topLine) && this.prevChar.isInterferingPixel(x - xStart, y - this.topLine)) {
 						String msg = "Failed to find match for non-interference pixel on expected match at x=" + xStart + " y=" + this.topLine + ".  ";
 						this.logImage(msg, "unmatchedExpectedChar", false);
 						throw new Exception(msg);

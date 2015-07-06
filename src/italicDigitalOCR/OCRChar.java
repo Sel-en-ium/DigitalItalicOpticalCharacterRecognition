@@ -79,7 +79,7 @@ public class OCRChar
 	}
 	
 	public char getCharName(String file, HashMap<String, Character> nameConfig) throws Exception {
-		String name = file.substring(0, file.indexOf('.'));
+		String name = file.substring(0, file.indexOf(".png"));
 		name = name.substring(name.lastIndexOf(File.separator)+1);
 		
 		if (nameConfig != null) {

@@ -60,7 +60,7 @@ public class OCRReader {
 	 */
 	public static void main(String[] args) {
 		try {
-			OCRReader reader = new OCRReader("MessageFont");
+			OCRReader reader = new OCRReader("FontMessage");
 			reader.printCharMap();
 			BufferedImage image = ImageIO.read(new File("ExampleImage.png"));
 			String readin = reader.readLines(image);
@@ -299,9 +299,6 @@ public class OCRReader {
 							
 							for (int c = 0; c < charList.size(); c++) {
 								chara = charList.get(c);
-								if (chara.charName == 'W') {
-									System.out.println("DKDS");
-								}
 									
 								this.topLine = y - chara.yLeftTopPixel;
 								if (this.testMatch(chara, x - chara.xLeftTopPixel)) {

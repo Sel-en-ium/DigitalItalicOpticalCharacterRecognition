@@ -24,7 +24,8 @@ public class OCRReader {
 	private static boolean TRAINING = true;
 	private static String ERROR_LOG = "OcrErrorLog.txt";
 	private static String CHAR_NAME_LIST = "NameConfig.txt";
-	private static String ERROR_FOLDER = "Errors";
+	private static String ERROR_FOLDER = "ErrorLogs";
+	private static String NO_LOAD_FOLDER = "WillNotLoadFolder";
 	
 	/* Other Constants, shouldn't modify */
 	private static int BLACK = -16777216;
@@ -173,11 +174,12 @@ public class OCRReader {
 		for (Path currentEntity : stream) {
 
 			// We will only be looking at files inside of directories
-			if (Files.isDirectory(currentEntity)) {
+			String folder = currentEntity.getFileName().toString();
+			if (Files.isDirectory(currentEntity) && !folder.equals(ERROR_FOLDER) && !folder.equals(NO_LOAD_FOLDER)) {
 				try {
 					nameConfig = getNameConfig(currentEntity.toString());
 				} catch (Exception e) {
-					// No name config
+					// No name config file
 					nameConfig = null;
 				}
 				
@@ -284,9 +286,6 @@ public class OCRReader {
 		for (int x = 0; x < this.width; x++) {
 			for (int y = yStart; y <= yStart + this.expectedHeight && y < this.height; y++) {
 	
-				if (x == 7 && y == 8) {
-					System.out.println("LEFTTOPS");
-				}
 				// Found a character pixel, try to match it
 				if (image.getRGB(x, y) == textColor) {
 
@@ -323,9 +322,6 @@ public class OCRReader {
 
 		for (int y = startY; y < this.height; y++) {
 			for (int x = 0; x < this.width; x++) {
-				if (x == 7 && y == 8) {
-					System.out.println("s begin");
-				}
 				if (matchesTextColors(image.getRGB(x, y))) {
 					this.topLine = y;
 					return image.getRGB(x, y);
@@ -415,7 +411,7 @@ public class OCRReader {
 				}				
 			}
 		}
-		String msg = "Failed to find character on this line: " + this.topLine + " after this x: " + xStart;
+		String msg = "Failed to find character on this line: " + this.topLine + " after this x: " + xStart + ".  ";
 		this.logImage(msg, "unmatchedCharOnLine", false);
 		this.x = this.width;
 		throw new Exception(msg);
@@ -508,7 +504,7 @@ public class OCRReader {
 		String additionalInfo = "";
 		if (DEBUG || override) {
 			try {
-				String filename = ERROR_FOLDER + File.separator + fileNamePrepend + new Date().getTime() + ".png";
+				String filename = this.TRAINING_FOLDER + File.separator + ERROR_FOLDER + File.separator + fileNamePrepend + new Date().getTime() + ".png";
 				ImageIO.write(image, "png", new File(filename));
 				additionalInfo = "File saved to " + filename;
 			} catch (Exception e) {
@@ -521,7 +517,7 @@ public class OCRReader {
 	private void log(String msg, boolean override) {
 		if (DEBUG || override) {
 			try {
-			    FileWriter out = new FileWriter(ERROR_LOG, true);
+			    FileWriter out = new FileWriter(this.TRAINING_FOLDER + File.separator + ERROR_FOLDER + File.separator + ERROR_LOG, true);
 			    out.write(msg + System.lineSeparator());
 			    out.close();
 			} catch (IOException e) {

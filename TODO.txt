@@ -1,3 +1,4 @@
 Add moreof the characters
 Complete some documentation/instructions
 enable characters on same line to have different color
+Change to string from char for patches

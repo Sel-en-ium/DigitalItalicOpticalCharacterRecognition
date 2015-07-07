@@ -39,6 +39,9 @@ If you are unsure how to format any of the files please look at the "Description
 ```java
 --YourTrainingFolder
  |
+ |--------ErrorLogs (Reserved Folder - Error logs will be saved here)
+ |--------WillNotLoadFolder (Reserved Folder - For yor notes and things)
+ |
  |--------PossibleTextColors.png
  |--------Space.png
  |--------Height.png

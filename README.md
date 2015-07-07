@@ -45,7 +45,6 @@ If you are unsure how to format any of the files please look at the "Description
  |--------PossibleTextColors.png
  |--------Space.png
  |--------Height.png
- |--------WhiteSpaceLeft.png
  |
  |--------CharacterFolder1 [Name unimportant, up to you]
  |       |------NameConfig.txt [Optional]

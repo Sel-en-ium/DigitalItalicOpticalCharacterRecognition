@@ -34,7 +34,7 @@ public class OCRReader {
 	private OCRChar space;
 	
 	private int expectedHeight;
-	private int whiteSpaceLeft;
+	private int whiteSpaceLeft = 0; // The longest x distance of whitespace in a char image before we hit a pixel.  (The distance is the first pixel.)
 	
 	private LinkedList<Integer> textColors;
 	private LinkedList<boolean[]> generalInterferencePixelsLeft = new LinkedList<boolean[]>();
@@ -77,15 +77,13 @@ public class OCRReader {
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
 		this.getAllChars(allChars);
 		this.initInterferenceArrays(allChars);
+		this.initWhiteSpaceLeft(allChars);
 		this.populateCharMap(allChars);		
 	}
 	
 	private void loadConfiguration() throws Exception {
-		this.expectedHeight = this.getTrainingImage("Height.png").getHeight();
-		this.whiteSpaceLeft = this.getTrainingImage("WhiteSpaceLeft.png").getWidth() + 1;
-		
+		this.expectedHeight = this.getTrainingImage("Height.png").getHeight();		
 		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
-
 		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
 	}
 	
@@ -148,11 +146,20 @@ public class OCRReader {
 		}
 	}
 	
+	private void initWhiteSpaceLeft(LinkedList<OCRChar> allChars) {
+		for (OCRChar chara : allChars) {
+			if (chara.whiteSpaceLeft > this.whiteSpaceLeft) {
+				this.whiteSpaceLeft = chara.whiteSpaceLeft;
+			}
+		}
+		this.whiteSpaceLeft++;
+	}
+	
 	private void populateCharMap(List<OCRChar> allChars) {
 		LinkedList<LinkedList<OCRChar>> heightList;
 		LinkedList<OCRChar> charList;
 		
-		// Initialize lists
+		// Initialize a list for each whitespace distance
 		this.charMap = new LinkedList<LinkedList<LinkedList<OCRChar>>>();
 		for (int i = 0; i < this.whiteSpaceLeft; i++) {
 			this.charMap.add(new LinkedList<LinkedList<OCRChar>>());

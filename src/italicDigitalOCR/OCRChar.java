@@ -11,10 +11,10 @@ public class OCRChar
 {	
 	/* Constants */
 	
-	private static int BLACK = -16777216; // Non interfering character pixel
-	private static int WHITE = -1; // Non interfering whitespace
-	private static int RED = -1237980; // Interfering character pixel
-	private static int GREY = -3947581; // Interfering whitespace
+	public static int BLACK = -16777216; // Non interfering character pixel
+	public static int WHITE = -1; // Non interfering whitespace
+	public static int RED = -1237980; // Interfering character pixel
+	public static int GREY = -3947581; // Interfering whitespace
 	
 	/* Class Properties */
 	

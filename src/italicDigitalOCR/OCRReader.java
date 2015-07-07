@@ -26,9 +26,6 @@ public class OCRReader {
 	private static String CHAR_NAME_LIST = "NameConfig.txt";
 	private static String ERROR_FOLDER = "ErrorLogs";
 	private static String NO_LOAD_FOLDER = "WillNotLoadFolder";
-	
-	/* Other Constants, shouldn't modify */
-	private static int BLACK = -16777216;
 
 	/* Initialization variables */
 	private String TRAINING_FOLDER;
@@ -40,8 +37,8 @@ public class OCRReader {
 	private int whiteSpaceLeft;
 	
 	private LinkedList<Integer> textColors;
-	private LinkedList<boolean[]> generalInterferencePixelsLeft;
-	private LinkedList<boolean[]> generalInterferencePixelsRight;
+	private LinkedList<boolean[]> generalInterferencePixelsLeft = new LinkedList<boolean[]>();
+	private LinkedList<boolean[]> generalInterferencePixelsRight = new LinkedList<boolean[]>();
 	
 	/* Object variables for current progress*/
 	
@@ -61,7 +58,7 @@ public class OCRReader {
 	 */
 	public static void main(String[] args) {
 		try {
-			OCRReader reader = new OCRReader("FontMessage");
+			OCRReader reader = new OCRReader("FontPopUp");
 			reader.printCharMap();
 			BufferedImage image = ImageIO.read(new File("ExampleImage.png"));
 			String readin = reader.readLines(image);
@@ -79,6 +76,7 @@ public class OCRReader {
 
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
 		this.getAllChars(allChars);
+		this.initInterferenceArrays(allChars);
 		this.populateCharMap(allChars);		
 	}
 	
@@ -87,10 +85,7 @@ public class OCRReader {
 		this.whiteSpaceLeft = this.getTrainingImage("WhiteSpaceLeft.png").getWidth() + 1;
 		
 		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
-		
-		this.generalInterferencePixelsLeft = this.getInterferenceArray("GeneralInterferencePixelsLeft.png");
-		this.generalInterferencePixelsRight = this.getInterferenceArray("GeneralInterferencePixelsRight.png");
-		
+
 		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
 	}
 	
@@ -109,27 +104,48 @@ public class OCRReader {
 		return colors;
 	}
 	
-	private LinkedList<boolean[]> getInterferenceArray(String fileName) throws Exception {
-		LinkedList<boolean[]> arr = new LinkedList<boolean[]>();
-		BufferedImage img = this.getTrainingImage(fileName);
+	private void initInterferenceArrays(LinkedList<OCRChar> allChars) throws Exception {
 		boolean[] temp;
+
+		int leftSize = this.generalInterferencePixelsLeft.size();
+		int rightSize = this.generalInterferencePixelsRight.size();
 		
-		if (img.getHeight() != this.expectedHeight) {
-			throw new Exception("Unexpected for file, " + fileName + ", should be " + this.expectedHeight + "px.");
-		}
+		for (OCRChar chara : allChars) {
 		
-		for (int x = 0; x < img.getWidth(); x++) {
-			temp = new boolean[this.expectedHeight];
-			for (int y = 0; y < this.expectedHeight; y++) {
-				if (img.getRGB(x, y) == BLACK) {
-					temp[y] = true;
-				} else {
-					temp[y] = false;
+			if (chara.image.getHeight() != this.expectedHeight) {
+				throw new Exception("Unexpected for char, " + chara.charName + ", should be " + this.expectedHeight + "px.");
+			}
+			
+			// Ensure array is large enough
+			while (chara.nonInterferingZoneLeft > rightSize) {
+				this.generalInterferencePixelsRight.add(new boolean[this.expectedHeight]);
+				rightSize++;
+			}
+
+			// Ensure array is large enough
+			while (chara.imageWidth - chara.nonInterferingZoneRight > leftSize) {
+				this.generalInterferencePixelsLeft.add(new boolean[this.expectedHeight]);
+				leftSize++;
+			}
+			
+			for (int x = 0; x < chara.nonInterferingZoneLeft; x++) {
+				temp = this.generalInterferencePixelsRight.get(x);
+				for (int y = 0; y < this.expectedHeight; y++) {
+					if (chara.image.getRGB(x, y) == OCRChar.RED) {
+						temp[y] = true;
+					}
 				}
 			}
-			arr.add(temp);
+			
+			for (int x = chara.imageWidth; x > chara.nonInterferingZoneRight; x--) {
+				temp = this.generalInterferencePixelsLeft.get(chara.imageWidth - x);
+				for (int y = 0; y < this.expectedHeight; y++) {
+					if (chara.image.getRGB(x-1, y) == OCRChar.RED) {
+						temp[y] = true;
+					}
+				}
+			}
 		}
-		return arr;
 	}
 	
 	private void populateCharMap(List<OCRChar> allChars) {
@@ -492,8 +508,8 @@ public class OCRReader {
 	}
 
 	private boolean matchesTextColors(int color) {
-		for (int i = 0; i < this.textColors.size(); i++) {
-			if (color == this.textColors.get(i)) {
+		for (int textColor : this.textColors) {
+			if (color == textColor) {
 				return true;
 			}
 		}

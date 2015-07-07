@@ -40,11 +40,10 @@ If you are unsure how to format any of the files please look at the "Description
 --YourTrainingFolder
  |
  |--------ErrorLogs (Reserved Folder - Error logs will be saved here)
- |--------WillNotLoadFolder (Reserved Folder - For yor notes and things)
+ |--------WillNotLoadFolder (Reserved Folder - For your notes and things)
  |
  |--------PossibleTextColors.png
  |--------Space.png
- |--------Height.png
  |
  |--------CharacterFolder1 [Name unimportant, up to you]
  |       |------NameConfig.txt [Optional]
@@ -58,6 +57,8 @@ If you are unsure how to format any of the files please look at the "Description
 ###Descriptions (WIP)
 #####Space.png:
 Should be line height (as all character images should be).  Should be the width that the space takes up.
+#####PossibleTextColors.png: 
+Each pixel of color in this image will be assumed to be a possible text color.  If a character is a color not included here it will not be found.
 #####CharacterFolder: 
 Folder - you can make folders with your own names with the following structure, they are loaded dynamically.  They should contain all characters you wish to load [except for the space character].
 #####NameConfig.txt: 

@@ -70,21 +70,21 @@ public class OCRReader {
 	}
 	
 	public OCRReader(String trainingFolder) throws Exception {
-
 		this.TRAINING_FOLDER = trainingFolder;
-		this.loadConfiguration();
+
+		this.loadTrainingfFolder();
+	}
+	
+	private void loadTrainingfFolder() throws Exception {
+		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
+		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
+		this.expectedHeight = this.space.imageHeight;
 
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
 		this.getAllChars(allChars);
 		this.initInterferenceArrays(allChars);
 		this.initWhiteSpaceLeft(allChars);
-		this.populateCharMap(allChars);		
-	}
-	
-	private void loadConfiguration() throws Exception {
-		this.expectedHeight = this.getTrainingImage("Height.png").getHeight();		
-		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
-		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
+		this.populateCharMap(allChars);	
 	}
 	
 	private BufferedImage getTrainingImage(String fileName) throws IOException {

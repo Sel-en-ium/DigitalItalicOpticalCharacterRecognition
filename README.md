@@ -33,7 +33,7 @@ System.out.println(line);
 All the required configuration is done by populating your training folder.
 
 ###Training Folder Structure
-View an example of the interior structure with example images loaded  [here](https://github.com/Sel-en-ium/DigitalItalicOpticalCharacterRecognition/tree/master/OcrTraining).  
+View an example of the interior structure with example images loaded [here](https://github.com/Sel-en-ium/DigitalItalicOpticalCharacterRecognition/tree/master/FontMessage).
 If you are unsure how to format any of the files please look at the "Descriptions" section.
 
 ```java

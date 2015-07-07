@@ -46,8 +46,6 @@ If you are unsure how to format any of the files please look at the "Description
  |--------Space.png
  |--------Height.png
  |--------WhiteSpaceLeft.png
- |--------GeneralInterferencePixelsLeft.png
- |--------GeneralInterferencePixelsRight.png
  |
  |--------CharacterFolder1 [Name unimportant, up to you]
  |       |------NameConfig.txt [Optional]

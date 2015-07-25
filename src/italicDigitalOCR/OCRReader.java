@@ -62,7 +62,7 @@ public class OCRReader {
 			reader.printCharMap();
 			BufferedImage image = ImageIO.read(new File("ExampleImage.png"));
 			String readin = reader.readLines(image);
-			System.out.println("SUCCESS LOL!  Well here it is.. " + System.lineSeparator() + "'" + readin + "'");
+			System.out.println("SUCCESS LOL!  Well here it is: " + System.lineSeparator() + readin);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -77,7 +77,7 @@ public class OCRReader {
 	
 	private void loadTrainingfFolder() throws Exception {
 		this.textColors = this.getPossibleTextColors("PossibleTextColors.png");
-		this.space = new OCRChar(this.getTrainingImage("Space.png"), ' ');
+		this.space = new OCRChar(this.getTrainingImage("Space.png"), " ");
 		this.expectedHeight = this.space.imageHeight;
 
 		LinkedList<OCRChar> allChars = new LinkedList<OCRChar>();
@@ -190,7 +190,7 @@ public class OCRReader {
 	}
 	
 	private void getAllChars(List<OCRChar> list) throws IOException {
-		HashMap<String, Character> nameConfig = null;
+		HashMap<String, String> nameConfig = null;
 		
 		// Iterates through all files in the directory
 		DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(this.TRAINING_FOLDER));
@@ -218,8 +218,8 @@ public class OCRReader {
 		}
 	}
 	
-	private HashMap<String, Character> getNameConfig(String folder) throws Exception {
-		HashMap<String, Character> config = new HashMap<String, Character>();
+	private HashMap<String, String> getNameConfig(String folder) throws Exception {
+		HashMap<String, String> config = new HashMap<String, String>();
 		File file = new File(folder + "/" + CHAR_NAME_LIST);
 		if (file.exists()) {
 			// load the config file in
@@ -229,7 +229,7 @@ public class OCRReader {
 			String line = null;
 			while ((line = br.readLine()) != null) {
 				entry = line.split(",");
-				config.put(entry[0], entry[1].charAt(0));
+				config.put(entry[0], entry[1]);
 			}
 			br.close();
 
@@ -238,7 +238,7 @@ public class OCRReader {
 		throw new Exception("No config File");
 	}
 
-	private void addCharToList(List<OCRChar> list, String fileName, HashMap<String, Character> nameConfig) {
+	private void addCharToList(List<OCRChar> list, String fileName, HashMap<String, String> nameConfig) {
 		try {
 			OCRChar c;
 			c = new OCRChar(fileName, nameConfig);

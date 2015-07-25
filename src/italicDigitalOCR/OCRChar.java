@@ -19,7 +19,7 @@ public class OCRChar
 	/* Class Properties */
 	
 	BufferedImage image;
-	char charName;
+	String charName;
 	int imageWidth;
 	int imageHeight;
 	int xLeftTopPixel;
@@ -32,7 +32,7 @@ public class OCRChar
 	int charHeight;
 	int whiteSpaceLeft;
 
-	public OCRChar(BufferedImage image, char charName) throws Exception {
+	public OCRChar(BufferedImage image, String charName) throws Exception {
 		this.image = image;
 		this.charName = charName;
 		this.imageWidth = image.getWidth();
@@ -63,7 +63,7 @@ public class OCRChar
 		this.setWhiteSpaceLeft();
 	}
 	
-	public OCRChar(String file, HashMap<String, Character> nameConfig) throws Exception {
+	public OCRChar(String file, HashMap<String, String> nameConfig) throws Exception {
 		this.image = ImageIO.read(new File(file));
 		
 		this.charName = getCharName(file, nameConfig);
@@ -78,7 +78,7 @@ public class OCRChar
 		this.setWhiteSpaceLeft();
 	}
 	
-	public char getCharName(String file, HashMap<String, Character> nameConfig) throws Exception {
+	public String getCharName(String file, HashMap<String, String> nameConfig) throws Exception {
 		String name = file.substring(0, file.indexOf(".png"));
 		name = name.substring(name.lastIndexOf(File.separator)+1);
 		
@@ -88,7 +88,7 @@ public class OCRChar
 			if (name.length() > 1) {
 				throw new Exception("Failed to get charName.");
 			} else {
-				return name.charAt(0);
+				return name;
 			}
 		}
 	}

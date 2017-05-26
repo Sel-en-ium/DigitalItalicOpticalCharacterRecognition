@@ -29,10 +29,10 @@ String line = reader.readLine(image);
 System.out.println(line);
 ```
 
-#How to Set it up to Use Your Font
+# How to Set it up to Use Your Font
 All the required configuration is done by populating your training folder.
 
-###Training Folder Structure
+### Training Folder Structure
 View an example of the interior structure with example images loaded [here](https://github.com/Sel-en-ium/DigitalItalicOpticalCharacterRecognition/tree/master/FontMessage).
 If you are unsure how to format any of the files please look at the "Descriptions" section.
 
@@ -54,13 +54,17 @@ If you are unsure how to format any of the files please look at the "Description
  |       |------All character images you wish to include
 ```
 
-###Descriptions (WIP)
-#####Space.png:
+### Descriptions (WIP)
+
+##### Space.png:
 Should be line height (as all character images should be).  Should be the width that the space takes up.
-#####PossibleTextColors.png: 
+
+##### PossibleTextColors.png: 
 Each pixel of color in this image will be assumed to be a possible text color.  If a character is a color not included here it will not be found.
-#####CharacterFolder: 
+
+##### CharacterFolder: 
 Folder - you can make folders with your own names with the following structure, they are loaded dynamically.  They should contain all characters you wish to load [except for the space character].
-#####NameConfig.txt: 
+
+##### NameConfig.txt: 
 Used for translating image names to their respective character.  Optional, otherwise the character images must be named [character].png
 
